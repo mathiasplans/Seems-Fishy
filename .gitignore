@@ -2,6 +2,8 @@ build
 .vscode
 cuda/build/*
 project_le_cmake/build/*
+*.spv
+
 # Prerequisites
 *.d
 

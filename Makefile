@@ -1,11 +1,8 @@
-OUTPUT = build/bin/Debug/vert.spv build/bin/Debug/frag.spv
+OUTPUT = vert.spv frag.spv
 
 all: $(OUTPUT)
 
-build/bin/Debug:
-	mkdir $@
-
-build/bin/Debug/%.spv: shaders/triangle.% build/bin/Debug
+%.spv: shaders/triangle.%
 	glslc.exe $< -o $@
 
 clean:
