@@ -25,8 +25,8 @@ struct Material {
 struct MarchHit {
   float dist;
   vec3 normal;
-  vec3 color;
   vec3 pos;
+  Material material;
 };
 
 MarchHit sphere(vec3 spherePosition, Ray ray, float radius, vec3 color, Material material) {
@@ -35,34 +35,36 @@ MarchHit sphere(vec3 spherePosition, Ray ray, float radius, vec3 color, Material
     MarchHit hit;
     hit.dist = dist;
     hit.normal = normal;
-    hit.color = mix(ray.color * material.color, material.color * material.ambient, 0.1);
+    hit.material = material;
+    //hit.color = mix(ray.color * material.color, material.color * material.ambient, 0.1);
     hit.pos = ray.pos;
 
     return hit;
 }
 
-MarchHit plane(vec3 planePosition, Ray ray, vec3 normal, vec3 color){
+MarchHit plane(vec3 planePosition, Ray ray, vec3 normal, vec3 color, Material material){
   vec3 planeToRay = ray.pos - planePosition;;
   float dist = length(dot(normal, planeToRay));
 
   MarchHit hit;
   hit.dist = dist;
   hit.normal = normalize(normal);
-  hit.color = color;
+  hit.material = material;
+  //hit.material.color = color;
   hit.pos = ray.pos;
 
   return hit;
 }
 
-MarchHit water(vec3 waterPosition, Ray ray, float amplitude, vec3 normal, vec3 color){
+MarchHit water(vec3 waterPosition, Ray ray, float amplitude, vec3 normal, vec3 color, Material material){
     vec3 planePosition = waterPosition;
     if(ray.pos.y > waterPosition.y){
         planePosition.y += amplitude;
-        return plane(planePosition, ray, normal, color);
+        return plane(planePosition, ray, normal, color,material);
     }
     else{
          planePosition.y -= amplitude;
-        return plane(planePosition, ray, normal, color);
+        return plane(planePosition, ray, normal, color,material);
     }
 }
 
@@ -81,17 +83,24 @@ MarchHit smallest(Ray ray) {
     basic2.color = vec3(0,1,0);
     basic2.ambient = vec3(0.1,0.1,0.1);
 
+    Material wall;
+    wall.diffuse = vec3(0,0,0);
+    wall.specular = vec3(0,0,0);
+    wall.shininess = vec3(0,0,0);
+    wall.color = vec3(1,1,1);
+    wall.ambient = vec3(0.1,0.1,0.1);
+
     MarchHit hits[] = {
         sphere(vec3(1.0, 1.0, -3.0), ray, 1.0, vec3(1.0, 0.0, 1.0),basic),
         // plane(vec3(0.0, -10.0, -10.0), position, vec3(0.0, 1.0, 1.0), vec3(1.0, 0.0, 1.0))
         sphere(vec3(6.0, 4.0, -6.0), ray, 1.0, vec3(1.0, 1.0, 0.0),basic2),
 
-        plane(vec3(10.0, 0.0, 0.0), ray, vec3(-1.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)),
-        plane(vec3(0.0, 10.0, 0.0), ray, vec3(0.0, -1.0, 0.0), vec3(1.0, 0.0, 0.0)),
-        plane(vec3(0.0, 0.0, 10.0), ray, vec3(0.0, 0.0, -1.0), vec3(1.0, 1.0, 1.0)),
-        plane(vec3(-10.0, 0.0, 0.0), ray, vec3(1.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)),
-        plane(vec3(0.0, -10.0, 0.0), ray, vec3(0.0, 1.0, 0.0), vec3(1.0, 1.0, 1.0)),
-        plane(vec3(0.0, 0.0, -10.0), ray, vec3(0.0, 0.0, 1.0), vec3(1.0, 1.0, 1.0))
+        plane(vec3(10.0, 0.0, 0.0), ray, vec3(-1.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0),wall),
+        plane(vec3(0.0, 10.0, 0.0), ray, vec3(0.0, -1.0, 0.0), vec3(1.0, 0.0, 0.0),wall),
+        plane(vec3(0.0, 0.0, 10.0), ray, vec3(0.0, 0.0, -1.0), vec3(1.0, 1.0, 1.0),wall),
+        plane(vec3(-10.0, 0.0, 0.0), ray, vec3(1.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0),wall),
+        plane(vec3(0.0, -10.0, 0.0), ray, vec3(0.0, 1.0, 0.0), vec3(1.0, 1.0, 1.0),wall),
+        plane(vec3(0.0, 0.0, -10.0), ray, vec3(0.0, 0.0, 1.0), vec3(1.0, 1.0, 1.0),wall)
     };
 
     MarchHit bestHit = hits[0];
@@ -117,7 +126,7 @@ MarchHit march(Ray ray) {
             MarchHit miss;
             miss.dist = 100000.0;
             miss.normal = vec3(0.0);
-            miss.color = vec3(0.0);
+            miss.material.color = vec3(0.0);
 
             return miss;
         }
@@ -152,11 +161,15 @@ MarchHit multi_march(Ray ray, int jumps) {
     }
 
     // Mixing color
-    for (int a = i; i > 0; --i) {
-        hits[a - 1].color = mix(hits[a].color, hits[a - 1].color, 0.7);
+    //for (int i = 0; i  a; --i) {
+    for (int a = i; a > 0; --a){
+    
+        ray.color = ray.color * hits[a-1].material.color;
+        //hits[a - 1].color = mix(hits[a].color, hits[a - 1].color, 0.7);
     }
 
-    first.color = mix(hits[0].color, hits[1].color, 0.3);
+    first.material.color = ray.color;
+    //first.color = mix(hits[0].color, hits[1].color, 0.3);
 
     return first;
 }
@@ -176,7 +189,7 @@ void main() {
 
     vec3 lightDir = normalize(hit.pos - lightPos);
 
-    vec3 col = hit.color;// * (dot(-lightDir, hit.normal));
+    vec3 col = hit.material.color;// * (dot(-lightDir, hit.normal));
 
     outColor = vec4(col, 1.0);
 }
