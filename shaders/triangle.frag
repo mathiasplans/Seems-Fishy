@@ -160,6 +160,8 @@ MarchHit multi_march(Ray ray, int jumps, vec3 lightPos) {
         hits[a - 1].material.color *= dot(-lightDir, hits[a - 1].normal);
 
         ray.color = ray.color * hits[a-1].material.color;
+        // ray.color = mix(ray.color * hits[a-1].material.color , ray.color, ray.energy);
+        // ray.energy *= 0.7;
     }
 
     first.material.color = ray.color;
