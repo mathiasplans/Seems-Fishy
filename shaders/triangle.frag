@@ -21,6 +21,7 @@ struct Material {
     vec3 diffuse;
     vec3 shininess;
     float reflectance;
+    bool isWater;
 };
 
 //return type for hit function
@@ -81,32 +82,54 @@ float rand(vec2 co){
     return fract(sin(dot(co.xy ,vec2(12.9898,78.233 ))) * 43758.5453);
 }
 
-float wave(Ray ray, vec3 waterPosition, float time, float amplitude, float wavelength, float speed){
+vec3 wave(Ray ray, vec3 waterPosition, float time, float amplitude, float wavelength, float speed){
+    vec3 updt;
     vec3 crest_vector = waterPosition - ray.pos;
     vec3 ray_pos = ray.pos;
     ray_pos.z = 0;
     float freq = 2 * PI / wavelength;
     float phase = speed * freq;
-    float ret = amplitude * sin(dot(crest_vector, ray_pos) + time * phase);
-    return ret;
-     
+
+    updt.x = amplitude * sin(dot(crest_vector, ray_pos) * freq + time * phase);
+    float inCos = cos(dot(crest_vector, ray_pos) * freq + time * phase);
+    updt.y = crest_vector.x * freq * amplitude * inCos;
+    updt.z = crest_vector.y * freq * amplitude * inCos;
+
+    return updt;
 }
 
-Ray intersectWater(Ray ray, vec3 waterPosition, vec3 normal, WaveProperties waveProps, float time){
-    ray.pos.z = 0;
+Ray intersectWater(Ray ray, vec3 waterPosition, WaveProperties waveProps, float time){
+    vec3 updates = vec3(0);
+
     for(int i = 0; i < 4; ++i){
-        ray.pos.z = ray.pos.z + wave(ray, waterPosition, time, waveProps.amplitudes[i], waveProps.wavelengths[i], waveProps.speeds[i]);
+        updates = updates + wave(ray, waterPosition, time, waveProps.amplitudes[i], waveProps.wavelengths[i], waveProps.speeds[i]);
     }
+
+    ray.pos.z = updates.x;
+
+    vec3 binormal;
+    binormal.x = 1;
+    binormal.y = 0;
+    binormal.z = updates.y;
+
+    vec3 tangent;
+    tangent.x = 0;
+    tangent.y = 1;
+    tangent.z = updates.z; 
+
     vec2 seed;
     seed.x = time;
     seed.y = time;
+
+    vec3 waveNormal = cross(binormal, tangent);
+
     if(rand(seed) < 0.5){
         //refract
-        ray.dir = refract(ray.dir, normal, 1/1.33);
+        ray.dir = refract(ray.dir, waveNormal, 1/1.33);
     }
     else{
         //reflect
-        ray.dir = reflect(ray.dir, normal);
+        ray.dir = reflect(ray.dir, waveNormal);
     }
     return ray;
 }
@@ -131,6 +154,8 @@ MarchHit smallest(Ray ray) {
     Material wall1 = createMaterial(vec3(1.0), vec3(0.1), vec3(0.0), 0.0);
     Material wall2 = createMaterial(vec3(0.6, 0.7, 0.2), vec3(0.1), vec3(0.0), 0.0);
     Material wall3 = createMaterial(vec3(0.0, 0.0, 1.0), vec3(0.1), vec3(0.0), 0.0);
+    Material matWater = createMaterial(vec3(1, 1, 1), vec3(0.1), vec3(0.0), 0.5);
+    matWater.isWater = true;
 
     MarchHit hits[] = {
         sphere(vec3(1.0, 1.0, -3.0), ray, 1.0, sphere1),
@@ -142,8 +167,9 @@ MarchHit smallest(Ray ray) {
         plane(vec3(0.0, 0.0, 10.0), ray, vec3(0.0, 0.0, -1.0), wall3),
         plane(vec3(-10.0, 0.0, 0.0), ray, vec3(1.0, 0.0, 0.0), wall1),
         plane(vec3(0.0, -10.0, 0.0), ray, vec3(0.0, 1.0, 0.0), wall2),
-        plane(vec3(0.0, 0.0, -10.0), ray, vec3(0.0, 0.0, 1.0), wall3)
+        water(vec3(0.0, 0.0, -10.0), ray, 1.0f, vec3(0.0, 0.0, 1.0), matWater)
     };
+
 
     MarchHit bestHit = hits[0];
     for (int i = 1; i < 9; ++i) {
@@ -178,6 +204,12 @@ MarchHit march(Ray ray) {
 }
 
 MarchHit multi_march(Ray ray, int jumps, vec3 lightPos) {
+
+    WaveProperties wp;
+    wp.wavelengths = vec4(0.1, 0.2, 0.3, 0.4);
+    wp.speeds = vec4(0.4, 0.3, 0.2, 0.1);
+    wp.amplitudes = vec4(0.5, 0.3, 0.1, 0.6);
+
     MarchHit first = march(ray);
     MarchHit current = first;
 
@@ -186,8 +218,14 @@ MarchHit multi_march(Ray ray, int jumps, vec3 lightPos) {
 
     int jump;
     for (jump = 1; jump < jumps; ++jump) {
-        // Get new direction
-        ray.dir = reflect(ray.dir, current.normal);
+
+        if(current.material.isWater){
+            ray = intersectWater(ray, vec3(0.0, 0.0, -10.0), wp, time);
+        }
+        else{
+            // Get new direction
+            ray.dir = reflect(ray.dir, current.normal);
+        }
 
         // Go away a bit
         current.pos += ray.dir * 0.01;
