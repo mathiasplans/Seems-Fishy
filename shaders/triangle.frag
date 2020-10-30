@@ -29,6 +29,7 @@ struct MarchHit {
   vec3 normal;
   vec3 pos;
   Material material;
+  vec3 objpos;
 };
 
 struct WaveProperties{
@@ -45,21 +46,23 @@ MarchHit sphere(vec3 spherePosition, Ray ray, float radius, Material material) {
     hit.normal = normal;
     hit.material = material;
     hit.pos = ray.pos;
+    hit.objpos = spherePosition;
 
     return hit;
 }
 
 MarchHit plane(vec3 planePosition, Ray ray, vec3 normal, Material material){
-  vec3 planeToRay = ray.pos - planePosition;;
-  float dist = length(dot(normal, planeToRay));
+    vec3 planeToRay = ray.pos - planePosition;;
+    float dist = length(dot(normal, planeToRay));
 
-  MarchHit hit;
-  hit.dist = dist;
-  hit.normal = normalize(normal);
-  hit.material = material;
-  hit.pos = ray.pos;
+    MarchHit hit;
+    hit.dist = dist;
+    hit.normal = normalize(normal);
+    hit.material = material;
+    hit.pos = ray.pos;
+    hit.objpos = planePosition;
 
-  return hit;
+    return hit;
 }
 
 MarchHit water(vec3 waterPosition, Ray ray, float amplitude, vec3 normal, Material material){
@@ -87,7 +90,7 @@ float wave(Ray ray, vec3 waterPosition, float time, float amplitude, float wavel
     float phase = speed * freq;
     float ret = amplitude * sin(dot(crest_vector, ray_pos) + time * phase);
     return ret;
-     
+
 }
 
 Ray intersectWater(Ray ray, vec3 waterPosition, vec3 normal, WaveProperties waveProps, float time){
@@ -102,14 +105,13 @@ Ray intersectWater(Ray ray, vec3 waterPosition, vec3 normal, WaveProperties wave
         //refract
         ray.dir = refract(ray.dir, normal, 1/1.33);
     }
+
     else{
         //reflect
         ray.dir = reflect(ray.dir, normal);
     }
     return ray;
 }
-
-
 
 Material createMaterial(vec3 color, vec3 diffuse, vec3 shininess, float reflectance) {
     Material newMaterial;
@@ -127,7 +129,7 @@ MarchHit smallest(Ray ray) {
     Material sphere2 = createMaterial(vec3(0.1, 0.8, 0.1), vec3(0.1), vec3(0.0), 0.3);
     Material sphere3 = createMaterial(vec3(1.0), vec3(0.1), vec3(0.0), 0.5);
     Material sphere4 = createMaterial(vec3(1.0), vec3(0.1), vec3(0.0), 1.0);
-    Material wall1 = createMaterial(vec3(1.0), vec3(0.1), vec3(0.0), 0.5);
+    Material wall1 = createMaterial(vec3(1.0), vec3(0.1), vec3(0.0), 0.0);
     Material wall2 = createMaterial(vec3(0.6, 0.7, 0.2), vec3(0.1), vec3(0.0), 0.0);
     Material wall3 = createMaterial(vec3(0.0, 0.0, 1.0), vec3(0.1), vec3(0.0), 0.0);
 
@@ -203,12 +205,28 @@ MarchHit multi_march(Ray ray, int jumps, vec3 lightPos) {
     }
 
     // Mixing color
-    for (int a = jump; a > 0; --a){
-        vec3 lightDir = normalize(hits[a - 1].pos - lightPos);
-        hits[a - 1].material.color *= dot(-lightDir, hits[a - 1].normal);
+    for (int a = jump; a > 0; --a) {
+        vec3 lightDir = lightPos - hits[a - 1].pos;
+        float lightDist = length(lightDir);
+        lightDir = normalize(lightDir);
 
-        vec3 ref = ray.color * hits[a - 1].material.color;
-        ray.color = mix(ref, hits[a - 1].material.color, 1 - hits[a - 1].material.reflectance);
+        Ray lightRay;
+        lightRay.pos = hits[a - 1].pos + lightDir * 0.1;
+        lightRay.dir = lightDir;
+
+        MarchHit h = march(lightRay);
+        float marchDist = length(h.pos - hits[a - 1].pos);
+
+        if (lightDist < marchDist) {
+            hits[a - 1].material.color *= dot(lightDir, hits[a - 1].normal);
+
+            vec3 ref = ray.color * hits[a - 1].material.color;
+            ray.color = mix(ref, hits[a - 1].material.color, 1 - hits[a - 1].material.reflectance);
+        }
+
+        else {
+            ray.color = vec3(0);
+        }
     }
 
     first.material.color = ray.color;
