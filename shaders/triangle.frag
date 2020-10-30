@@ -11,6 +11,7 @@ struct MarchHit {
   float dist;
   vec3 normal;
   vec3 color;
+  vec3 pos;
 };
 
 MarchHit sphere(vec3 spherePosition, vec3 rayPosition, float radius, vec3 color) {
@@ -20,6 +21,7 @@ MarchHit sphere(vec3 spherePosition, vec3 rayPosition, float radius, vec3 color)
     hit.dist = dist;
     hit.normal = normal;
     hit.color = color;
+    hit.pos = rayPosition;
 
     return hit;
 }
@@ -27,7 +29,7 @@ MarchHit sphere(vec3 spherePosition, vec3 rayPosition, float radius, vec3 color)
 MarchHit march(vec3 position, vec3 dir) {
     MarchHit hit = sphere(vec3(1.0, 1.0, -3.0), position, 1.0, vec3(1.0));
 
-    while (hit.dist > 0.3) {
+    while (hit.dist > 0.001) {
         position = position + dir * hit.dist;
         hit = sphere(vec3(1.0, 1.0, -3.0), position, 1.0, vec3(1.0));
 
@@ -49,11 +51,13 @@ void main() {
     vec3 pos3d = vec3(pos, 0.0);
     vec3 dir = normalize(pos3d - source);
 
-    vec3 lighPos = vec3(3.0);
+    vec3 lightPos = vec3(3.0);
 
     MarchHit hit = march(pos3d, dir);
 
-    vec3 col = hit.color * (dot(-dir, hit.normal));
+    vec3 lightDir = normalize(hit.pos - lightPos);
+
+    vec3 col = hit.color * (dot(-lightDir, hit.normal));
 
     outColor = vec4(col, 1.0);
 }
