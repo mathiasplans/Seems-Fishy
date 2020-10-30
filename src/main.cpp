@@ -103,7 +103,7 @@ struct UniformBufferObject {
     alignas(16) glm::mat4 model;
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
-    float time;
+    alignas(1) float time;
 };
 
 #include <cstdint>;
@@ -1002,6 +1002,7 @@ private:
         ubo.proj[1][1] *= -1;
 
         ubo.time = time;
+        std::cout << time << std::endl;
 
         void* data;
         vkMapMemory(device, uniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
