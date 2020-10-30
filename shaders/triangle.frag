@@ -6,6 +6,13 @@ layout(location = 1) in vec2 pos;
 
 layout(location = 0) out vec4 outColor;
 
+struct Ray {
+    vec3 pos;
+    vec3 dir;
+    vec3 color;
+    float energy;
+};
+
 //return type for hit function
 struct MarchHit {
   float dist;
@@ -14,41 +21,41 @@ struct MarchHit {
   vec3 pos;
 };
 
-MarchHit sphere(vec3 spherePosition, vec3 rayPosition, float radius, vec3 color) {
-    float dist = distance(spherePosition, rayPosition) - radius;
-    vec3 normal =  normalize(rayPosition - spherePosition);
+MarchHit sphere(vec3 spherePosition, Ray ray, float radius, vec3 color) {
+    float dist = distance(spherePosition, ray.pos) - radius;
+    vec3 normal =  normalize(ray.pos - spherePosition);
     MarchHit hit;
     hit.dist = dist;
     hit.normal = normal;
     hit.color = color;
-    hit.pos = rayPosition;
+    hit.pos = ray.pos;
 
     return hit;
 }
 
-MarchHit plane(vec3 planePosition, vec3 rayPosition, vec3 normal, vec3 color){
-  vec3 planeToRay = rayPosition - planePosition;;
+MarchHit plane(vec3 planePosition, Ray ray, vec3 normal, vec3 color){
+  vec3 planeToRay = ray.pos - planePosition;;
   float dist = length(dot(normal, planeToRay));
 
   MarchHit hit;
   hit.dist = dist;
   hit.normal = normalize(normal);
   hit.color = color;
-  hit.pos = rayPosition;
+  hit.pos = ray.pos;
 
   return hit;
 }
 
-MarchHit smallest(vec3 position, vec3 dir) {
+MarchHit smallest(Ray ray) {
     MarchHit hits[] = {
-        sphere(vec3(1.0, 1.0, -3.0), position, 1.0, vec3(1.0, 0.0, 1.0)),
-        sphere(vec3(3.0, 3.0, -4.0), position, 1.0, vec3(1.0, 1.0, 0.0)),
-        plane(vec3(10.0, 0.0, 0.0), position, vec3(-1.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)),
-        plane(vec3(0.0, 10.0, 0.0), position, vec3(0.0, -1.0, 0.0), vec3(1.0, 1.0, 1.0)),
-        plane(vec3(0.0, 0.0, 10.0), position, vec3(0.0, 0.0, -1.0), vec3(1.0, 1.0, 1.0)),
-        plane(vec3(-10.0, 0.0, 0.0), position, vec3(1.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)),
-        plane(vec3(0.0, -10.0, 0.0), position, vec3(0.0, 1.0, 0.0), vec3(1.0, 1.0, 1.0)),
-        plane(vec3(0.0, 0.0, -10.0), position, vec3(0.0, 0.0, 1.0), vec3(1.0, 1.0, 1.0))
+        sphere(vec3(1.0, 1.0, -3.0), ray, 1.0, vec3(1.0, 0.0, 1.0)),
+        sphere(vec3(3.0, 3.0, -4.0), ray, 1.0, vec3(1.0, 1.0, 0.0)),
+        plane(vec3(10.0, 0.0, 0.0), ray, vec3(-1.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)),
+        plane(vec3(0.0, 10.0, 0.0), ray, vec3(0.0, -1.0, 0.0), vec3(1.0, 0.0, 0.0)),
+        plane(vec3(0.0, 0.0, 10.0), ray, vec3(0.0, 0.0, -1.0), vec3(1.0, 1.0, 1.0)),
+        plane(vec3(-10.0, 0.0, 0.0), ray, vec3(1.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)),
+        plane(vec3(0.0, -10.0, 0.0), ray, vec3(0.0, 1.0, 0.0), vec3(1.0, 1.0, 1.0)),
+        plane(vec3(0.0, 0.0, -10.0), ray, vec3(0.0, 0.0, 1.0), vec3(1.0, 1.0, 1.0))
     };
 
     MarchHit bestHit = hits[0];
@@ -62,12 +69,12 @@ MarchHit smallest(vec3 position, vec3 dir) {
     return bestHit;
 }
 
-MarchHit march(vec3 position, vec3 dir) {
-    MarchHit hit = smallest(position, dir);
+MarchHit march(Ray ray) {
+    MarchHit hit = smallest(ray);
 
     while (hit.dist > 0.001) {
-        position = position + dir * hit.dist;
-        hit = smallest(position, dir);
+        ray.pos = ray.pos + ray.dir * hit.dist;
+        hit = smallest(ray);
 
         // Too far, stop
         if (hit.dist > 100.0) {
@@ -83,25 +90,37 @@ MarchHit march(vec3 position, vec3 dir) {
     return hit;
 }
 
-MarchHit multi_march(vec3 position, vec3 dir, int jumps) {
-    MarchHit first = march(position, dir);
+MarchHit multi_march(Ray ray, int jumps) {
+    MarchHit first = march(ray);
     MarchHit current = first;
-    for (int i = 1; i < 10; ++i) {
+
+    vec3 colors[10];
+    colors[0] = first.color;
+
+    int i;
+    for (i = 1; i < 10; ++i) {
         // Get new direction
-        vec3 newDir = reflect(dir, current.normal);
+        ray.dir = reflect(ray.dir, current.normal);
 
         // Go away a bit
-        current.pos += newDir * 0.1;
+        current.pos += ray.dir * 0.01;
 
         // Do the march
-        MarchHit current = march(current.pos, newDir);
+        MarchHit current = march(ray);
 
+        // Miss
         if (current.normal == vec3(0.0))
             break;
 
-        // Add the color
-        first.color = mix(first.color, current.color, 0.05);
+        colors[i] = current.color;
     }
+
+    // Mixing color
+    for (int a = i; i > 0; --i) {
+        colors[a - 1] = mix(colors[a], colors[a - 1], 0.9);
+    }
+
+    first.color = mix(colors[0], colors[1], 0.1);
 
     return first;
 }
@@ -113,8 +132,10 @@ void main() {
 
     vec3 lightPos = vec3(3.0);
 
-
-    MarchHit hit = multi_march(pos3d, dir, 100);
+    Ray ray;
+    ray.pos = pos3d;
+    ray.dir = dir;
+    MarchHit hit = multi_march(ray, 100);
 
     vec3 lightDir = normalize(hit.pos - lightPos);
 
