@@ -71,21 +71,21 @@ MarchHit water(vec3 waterPosition, Ray ray, float amplitude, vec3 normal, vec3 c
 MarchHit smallest(Ray ray) {
     Material basic;
     basic.diffuse = vec3(0,0,0);
-    basic.specular = vec3(0,0,0);
+    basic.specular = vec3(0.3,0.3,0.3);
     basic.shininess = vec3(0,0,0);
     basic.color = vec3(1,0,0);
     basic.ambient = vec3(0.1,0.1,0.1);
 
     Material basic2;
     basic2.diffuse = vec3(0,0,0);
-    basic2.specular = vec3(0,0,0);
+    basic2.specular = vec3(0.3,0.3,0.3);
     basic2.shininess = vec3(0,0,0);
     basic2.color = vec3(0,1,0);
     basic2.ambient = vec3(0.1,0.1,0.1);
 
     Material wall;
     wall.diffuse = vec3(0,0,0);
-    wall.specular = vec3(0,0,0);
+    wall.specular = vec3(0.3,0.3,0.3);
     wall.shininess = vec3(0,0,0);
     wall.color = vec3(1,1,1);
     wall.ambient = vec3(0.1,0.1,0.1);
@@ -164,7 +164,8 @@ MarchHit multi_march(Ray ray, int jumps) {
     //for (int i = 0; i  a; --i) {
     for (int a = i; a > 0; --a){
     
-        ray.color = ray.color * hits[a-1].material.color;
+        ray.color = mix(ray.color * hits[a-1].material.color , ray.color, ray.energy);
+        ray.energy *= 0.7;
         //hits[a - 1].color = mix(hits[a].color, hits[a - 1].color, 0.7);
     }
 
@@ -189,7 +190,7 @@ void main() {
 
     vec3 lightDir = normalize(hit.pos - lightPos);
 
-    vec3 col = hit.material.color;// * (dot(-lightDir, hit.normal));
+    vec3 col = hit.material.color * (dot(-lightDir, hit.normal));
 
     outColor = vec4(col, 1.0);
 }
