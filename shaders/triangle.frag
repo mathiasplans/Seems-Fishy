@@ -46,6 +46,18 @@ MarchHit plane(vec3 planePosition, Ray ray, vec3 normal, vec3 color){
   return hit;
 }
 
+MarchHit water(vec3 waterPosition, Ray ray, float amplitude, vec3 normal, vec3 color){
+    vec3 planePosition = waterPosition;
+    if(ray.pos.y > waterPosition.y){
+        planePosition.y += amplitude;
+        return plane(planePosition, ray, normal, color);
+    }
+    else{
+         planePosition.y -= amplitude;
+        return plane(planePosition, ray, normal, color);
+    }  
+}
+
 MarchHit smallest(Ray ray) {
     MarchHit hits[] = {
         sphere(vec3(1.0, 1.0, -3.0), ray, 1.0, vec3(1.0, 0.0, 1.0)),
