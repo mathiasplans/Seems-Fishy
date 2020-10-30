@@ -1,6 +1,8 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
+#define PI 3.1415926535897932384626433832795
+
 layout(location = 0) in vec3 fragColor;
 layout(location = 1) in vec2 pos;
 layout(location = 2) in float time;
@@ -29,6 +31,13 @@ struct MarchHit {
   Material material;
 };
 
+struct WaveProperties{
+    vec4 wavelengths;
+    vec4 speeds;
+    vec4 amplitudes;
+};
+
+MarchHit sphere(vec3 spherePosition, Ray ray, float radius, vec3 color, Material material) {
 MarchHit sphere(vec3 spherePosition, Ray ray, float radius, Material material) {
     float dist = distance(spherePosition, ray.pos) - radius;
     vec3 normal =  normalize(ray.pos - spherePosition);
@@ -67,6 +76,43 @@ MarchHit water(vec3 waterPosition, Ray ray, float amplitude, vec3 normal, Materi
     }
 }
 
+float rand(vec2 co){
+    return fract(sin(dot(co.xy ,vec2(12.9898,78.233 ))) * 43758.5453);
+}
+
+float wave(Ray ray, vec3 waterPosition, float time, float amplitude, float wavelength, float speed){
+    vec3 crest_vector = waterPosition - ray.pos;
+    vec3 ray_pos = ray.pos;
+    ray_pos.z = 0;
+    float freq = 2 * PI / wavelength;
+    float phase = speed * freq;
+    float ret = amplitude * sin(dot(crest_vector, ray_pos) + time * phase);
+    return ret;
+     
+}
+
+Ray intersectWater(Ray ray, vec3 waterPosition, vec3 normal, WaveProperties waveProps, float time){
+    ray.pos.z = 0;
+    for(int i = 0; i < 4; ++i){
+        ray.pos.z = ray.pos.z + wave(ray, waterPosition, time, waveProps.amplitudes[i], waveProps.wavelengths[i], waveProps.speeds[i]);
+    }
+    vec2 seed;
+    seed.x = time;
+    seed.y = time;
+    if(rand(seed) < 0.5){
+        //refract
+        ray.dir = refract(ray.dir, normal, 1/1.33);
+    }
+    else{
+        //reflect
+        ray.dir = reflect(ray.dir, normal);
+    }
+    return ray;
+}
+
+
+
+Material createMaterial(vec3 color, vec3 diffuse, vec3 shininess) {
 Material createMaterial(vec3 color, vec3 diffuse, vec3 shininess, float reflectance) {
     Material newMaterial;
 
