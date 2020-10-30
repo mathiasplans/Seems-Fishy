@@ -13,6 +13,14 @@ struct Ray{
     float energy;
 };
 
+struct Material {
+    vec3 diffuse;
+    vec3 specular;
+    vec3 shininess;
+    vec3 color;
+    vec3 ambient;      
+};
+
 //return type for hit function
 struct MarchHit {
   float dist;
@@ -21,13 +29,13 @@ struct MarchHit {
   vec3 pos;
 };
 
-MarchHit sphere(vec3 spherePosition, Ray ray, float radius, vec3 color) {
+MarchHit sphere(vec3 spherePosition, Ray ray, float radius, vec3 color, Material material) {
     float dist = distance(spherePosition, ray.pos) - radius;
     vec3 normal =  normalize(ray.pos - spherePosition);
     MarchHit hit;
     hit.dist = dist;
     hit.normal = normal;
-    hit.color = color;
+    hit.color = mix(ray.color* material.color, material.color*material.ambient,0.2);
     hit.pos = ray.pos;
 
     return hit;
@@ -47,10 +55,24 @@ MarchHit plane(vec3 planePosition, Ray ray, vec3 normal, vec3 color){
 }
 
 MarchHit smallest(Ray ray) {
+    Material basic;
+    basic.diffuse = vec3(0,0,0);
+    basic.specular = vec3(0,0,0);
+    basic.shininess = vec3(0,0,0);
+    basic.color = vec3(1,0,0);
+    basic.ambient = vec3(0.1,0.1,0.1);
+
+    Material basic2;
+    basic2.diffuse = vec3(0,0,0);
+    basic2.specular = vec3(0,0,0);
+    basic2.shininess = vec3(0,0,0);
+    basic2.color = vec3(0,1,0);
+    basic2.ambient = vec3(0.1,0.1,0.1);
+
     MarchHit hits[] = {
-        sphere(vec3(1.0, 1.0, -3.0), ray, 1.0, vec3(1.0, 0.0, 1.0)),
+        sphere(vec3(1.0, 1.0, -3.0), ray, 1.0, vec3(1.0, 0.0, 1.0),basic),
         // plane(vec3(0.0, -10.0, -10.0), position, vec3(0.0, 1.0, 1.0), vec3(1.0, 0.0, 1.0))
-        sphere(vec3(3.0, 3.0, -4.0), ray, 1.0, vec3(1.0, 1.0, 0.0))
+        sphere(vec3(3.0, 3.0, -4.0), ray, 1.0, vec3(1.0, 1.0, 0.0),basic2)
     };
 
     MarchHit bestHit = hits[0];
@@ -112,7 +134,8 @@ void main() {
     Ray ray;
     ray.pos = pos3d;
     ray.dir = dir;
-    MarchHit hit = multi_march(ray, 3);
+    ray.color = vec3(1,1,1);
+    MarchHit hit = multi_march(ray, 10);
 
     vec3 lightDir = normalize(hit.pos - lightPos);
 
