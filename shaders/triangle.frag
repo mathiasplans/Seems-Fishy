@@ -122,6 +122,7 @@ Ray intersectWater(Ray ray, vec3 waterPosition, WaveProperties waveProps, float 
     seed.y = time;
 
     vec3 waveNormal = cross(binormal, tangent);
+    waveNormal = normalize(waveNormal);
 
     if(rand(seed) < 0.5){
         //refract
@@ -131,6 +132,8 @@ Ray intersectWater(Ray ray, vec3 waterPosition, WaveProperties waveProps, float 
         //reflect
         ray.dir = reflect(ray.dir, waveNormal);
     }
+
+    ray.dir = normalize(ray.dir);
     return ray;
 }
 
@@ -154,7 +157,7 @@ MarchHit smallest(Ray ray) {
     Material wall1 = createMaterial(vec3(1.0), vec3(0.1), vec3(0.0), 0.0);
     Material wall2 = createMaterial(vec3(0.6, 0.7, 0.2), vec3(0.1), vec3(0.0), 0.0);
     Material wall3 = createMaterial(vec3(0.0, 0.0, 1.0), vec3(0.1), vec3(0.0), 0.0);
-    Material matWater = createMaterial(vec3(1, 1, 1), vec3(0.1), vec3(0.0), 0.5);
+    Material matWater = createMaterial(vec3(.9, .9, 1), vec3(0.1), vec3(0.0), 0.5);
     matWater.isWater = true;
 
     MarchHit hits[] = {
@@ -167,7 +170,7 @@ MarchHit smallest(Ray ray) {
         plane(vec3(0.0, 0.0, 10.0), ray, vec3(0.0, 0.0, -1.0), wall3),
         plane(vec3(-10.0, 0.0, 0.0), ray, vec3(1.0, 0.0, 0.0), wall1),
         plane(vec3(0.0, -10.0, 0.0), ray, vec3(0.0, 1.0, 0.0), wall2),
-        water(vec3(0.0, 0.0, -10.0), ray, 1.0f, vec3(0.0, 0.0, 1.0), matWater)
+        water(vec3(0.0, 0.0, -10.0), ray, 1.0, vec3(0.0, 0.0, 1.0), matWater)
     };
 
 
@@ -223,8 +226,8 @@ MarchHit multi_march(Ray ray, int jumps, vec3 lightPos) {
             ray = intersectWater(ray, vec3(0.0, 0.0, -10.0), wp, time);
         }
         else{
-            // Get new direction
-            ray.dir = reflect(ray.dir, current.normal);
+        // Get new direction
+        ray.dir = reflect(ray.dir, current.normal);
         }
 
         // Go away a bit
