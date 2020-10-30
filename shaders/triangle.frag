@@ -27,3 +27,16 @@ MarchHit sphere(vec3 spherePosition, vec3 rayPosition, int radius, vec3 color){
 
     return hit;
 }
+
+MarchHit plane(vec3 planePosition, vec3 rayPosition, vec3 planeVector1, vec3 planeVector2,  vec3 color){
+  vec3 planeToRay = rayPosition - planePosition;
+  vec3 normal = cross(planeVector1, planeVector2);
+  float dist = length(dot(normal, planeToRay))/length(normal);
+
+  MarchHit hit;
+  hit.dist = dist;
+  hit.normal = normal;
+  hit.color = color;
+
+  return hit;
+}
