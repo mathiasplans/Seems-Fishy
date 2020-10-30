@@ -36,7 +36,6 @@ MarchHit sphere(vec3 spherePosition, Ray ray, float radius, Material material) {
     hit.dist = dist;
     hit.normal = normal;
     hit.material = material;
-    //hit.color = mix(ray.color * material.color, material.color * material.ambient, 0.1);
     hit.pos = ray.pos;
 
     return hit;
@@ -50,7 +49,6 @@ MarchHit plane(vec3 planePosition, Ray ray, vec3 normal, Material material){
   hit.dist = dist;
   hit.normal = normalize(normal);
   hit.material = material;
-  //hit.material.color = color;
   hit.pos = ray.pos;
 
   return hit;
@@ -82,8 +80,9 @@ Material createMaterial(vec3 color, vec3 diffuse, vec3 shininess, float reflecta
 
 MarchHit smallest(Ray ray) {
     Material sphere1 = createMaterial(vec3(0.7, 0.0, 0.3), vec3(0.1), vec3(0.0), 0.9);
-    Material sphere2 = createMaterial(vec3(0.1, 0.8, 0.1), vec3(0.1), vec3(0.0), 0.9);
+    Material sphere2 = createMaterial(vec3(0.1, 0.8, 0.1), vec3(0.1), vec3(0.0), 0.3);
     Material sphere3 = createMaterial(vec3(1.0), vec3(0.1), vec3(0.0), 0.5);
+    Material sphere4 = createMaterial(vec3(1.0), vec3(0.1), vec3(0.0), 1.0);
     Material wall1 = createMaterial(vec3(1.0), vec3(0.1), vec3(0.0), 0.0);
     Material wall2 = createMaterial(vec3(0.6, 0.7, 0.2), vec3(0.1), vec3(0.0), 0.0);
     Material wall3 = createMaterial(vec3(0.0, 0.0, 1.0), vec3(0.1), vec3(0.0), 0.0);
@@ -91,7 +90,8 @@ MarchHit smallest(Ray ray) {
     MarchHit hits[] = {
         sphere(vec3(1.0, 1.0, -3.0), ray, 1.0, sphere1),
         sphere(vec3(5.0, 4.0, -6.0), ray, 1.0, sphere2),
-        sphere(vec3(1.0, 2.0, 3.0), ray, 1.0, sphere3),
+        sphere(vec3(0.0, 0.0, 3.0), ray, 1.0, sphere3),
+        sphere(vec3(3.0, 4.0, -4.0), ray, 0.5, sphere4),
 
         plane(vec3(10.0, 0.0, 0.0), ray, vec3(-1.0, 0.0, 0.0), wall1),
         plane(vec3(0.0, 10.0, 0.0), ray, vec3(0.0, -1.0, 0.0), wall2),
@@ -102,7 +102,7 @@ MarchHit smallest(Ray ray) {
     };
 
     MarchHit bestHit = hits[0];
-    for (int i = 1; i < 9; ++i) {
+    for (int i = 1; i < 10; ++i) {
         MarchHit candidate = hits[i];
 
         if (bestHit.dist > candidate.dist)
