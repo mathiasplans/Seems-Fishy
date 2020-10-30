@@ -102,7 +102,7 @@ MarchHit smallest(Ray ray) {
     };
 
     MarchHit bestHit = hits[0];
-    for (int i = 1; i < 8; ++i) {
+    for (int i = 1; i < 9; ++i) {
         MarchHit candidate = hits[i];
 
         if (bestHit.dist > candidate.dist)
