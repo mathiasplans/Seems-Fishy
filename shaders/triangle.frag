@@ -83,7 +83,7 @@ MarchHit smallest(Ray ray) {
     Material sphere2 = createMaterial(vec3(0.1, 0.8, 0.1), vec3(0.1), vec3(0.0), 0.3);
     Material sphere3 = createMaterial(vec3(1.0), vec3(0.1), vec3(0.0), 0.5);
     Material sphere4 = createMaterial(vec3(1.0), vec3(0.1), vec3(0.0), 1.0);
-    Material wall1 = createMaterial(vec3(1.0), vec3(0.1), vec3(0.0), 0.0);
+    Material wall1 = createMaterial(vec3(1.0), vec3(0.1), vec3(0.0), 0.5);
     Material wall2 = createMaterial(vec3(0.6, 0.7, 0.2), vec3(0.1), vec3(0.0), 0.0);
     Material wall3 = createMaterial(vec3(0.0, 0.0, 1.0), vec3(0.1), vec3(0.0), 0.0);
 
@@ -183,7 +183,7 @@ void main() {
     ray.pos = pos3d;
     ray.dir = dir;
     ray.color = vec3(1,1,1);
-    MarchHit hit = multi_march(ray, 5, lightPos);
+    MarchHit hit = multi_march(ray, 6, lightPos);
 
     vec3 lightDir = normalize(hit.pos - lightPos);
 
