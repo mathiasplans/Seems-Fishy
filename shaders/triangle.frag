@@ -6,10 +6,6 @@ layout(location = 1) in vec2 pos;
 
 layout(location = 0) out vec4 outColor;
 
-void main() {
-    outColor = vec4(pos, 0.0, 1.0);
-}
-
 //return type for hit function
 struct MarchHit {
   float dist;
@@ -17,7 +13,7 @@ struct MarchHit {
   vec3 color;
 };
 
-MarchHit sphere(vec3 spherePosition, vec3 rayPosition, int radius, vec3 color){
+MarchHit sphere(vec3 spherePosition, vec3 rayPosition, float radius, vec3 color) {
     float dist = distance(spherePosition, rayPosition) - radius;
     vec3 normal =  normalize(rayPosition - spherePosition);
     MarchHit hit;
@@ -26,4 +22,38 @@ MarchHit sphere(vec3 spherePosition, vec3 rayPosition, int radius, vec3 color){
     hit.color = color;
 
     return hit;
+}
+
+MarchHit march(vec3 position, vec3 dir) {
+    MarchHit hit = sphere(vec3(1.0, 1.0, -3.0), position, 1.0, vec3(1.0));
+
+    while (hit.dist > 0.3) {
+        position = position + dir * hit.dist;
+        hit = sphere(vec3(1.0, 1.0, -3.0), position, 1.0, vec3(1.0));
+
+        if (hit.dist > 6.0) {
+            MarchHit miss;
+            miss.dist = 100000.0;
+            miss.normal = vec3(0.0);
+            miss.color = vec3(0.0);
+
+            return miss;
+        }
+    }
+
+    return hit;
+}
+
+void main() {
+    vec3 source = vec3(0.0, 0.0, 1.0);
+    vec3 pos3d = vec3(pos, 0.0);
+    vec3 dir = normalize(pos3d - source);
+
+    vec3 lighPos = vec3(3.0);
+
+    MarchHit hit = march(pos3d, dir);
+
+    vec3 col = hit.color * (dot(-dir, hit.normal));
+
+    outColor = vec4(col, 1.0);
 }
