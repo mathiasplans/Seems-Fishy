@@ -66,6 +66,8 @@ MarchHit water(vec3 waterPosition, Ray ray, float amplitude, vec3 normal, vec3 c
     }  
 }
 
+
+
 MarchHit smallest(Ray ray) {
     Material basic;
     basic.diffuse = vec3(0,0,0);
@@ -81,21 +83,15 @@ MarchHit smallest(Ray ray) {
     basic2.color = vec3(0,1,0);
     basic2.ambient = vec3(0.1,0.1,0.1);
 
-    MarchHit hits[] = {
-        sphere(vec3(1.0, 1.0, -3.0), ray, 1.0, vec3(1.0, 0.0, 1.0),basic),
-        // plane(vec3(0.0, -10.0, -10.0), position, vec3(0.0, 1.0, 1.0), vec3(1.0, 0.0, 1.0))
-        sphere(vec3(3.0, 3.0, -4.0), ray, 1.0, vec3(1.0, 1.0, 0.0),basic2),
 
-        plane(vec3(10.0, 0.0, 0.0), ray, vec3(-1.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)),
-        plane(vec3(0.0, 10.0, 0.0), ray, vec3(0.0, -1.0, 0.0), vec3(1.0, 0.0, 0.0)),
-        plane(vec3(0.0, 0.0, 10.0), ray, vec3(0.0, 0.0, -1.0), vec3(1.0, 1.0, 1.0)),
-        plane(vec3(-10.0, 0.0, 0.0), ray, vec3(1.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0)),
-        plane(vec3(0.0, -10.0, 0.0), ray, vec3(0.0, 1.0, 0.0), vec3(1.0, 1.0, 1.0)),
-        plane(vec3(0.0, 0.0, -10.0), ray, vec3(0.0, 0.0, 1.0), vec3(1.0, 1.0, 1.0))
+    MarchHit hits[] = {
+        sphere(vec3(1.0, 1.0, -3.0), ray, 1.0, vec3(1.0, 0.0, 1.0), basic),
+        // plane(vec3(0.0, -10.0, -10.0), position, vec3(0.0, 1.0, 1.0), vec3(1.0, 0.0, 1.0))
+        sphere(vec3(3.0, 3.0, -4.0), ray, 1.0, vec3(1.0, 1.0, 0.0), basic2),
     };
 
     MarchHit bestHit = hits[0];
-    for (int i = 1; i < 8; ++i) {
+    for (int i = 1; i < 2; ++i) {
         MarchHit candidate = hits[i];
 
         if (bestHit.dist > candidate.dist)
