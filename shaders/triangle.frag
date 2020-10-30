@@ -26,27 +26,45 @@ MarchHit sphere(vec3 spherePosition, vec3 rayPosition, float radius, vec3 color)
     return hit;
 }
 
-MarchHit plane(vec3 planePosition, vec3 rayPosition, vec3 planeVector1, vec3 planeVector2,  vec3 color){
+MarchHit plane(vec3 planePosition, vec3 rayPosition, vec3 planeVector1, vec3 planeVector2, vec3 color){
   vec3 planeToRay = rayPosition - planePosition;
   vec3 normal = cross(planeVector1, planeVector2);
-  float dist = length(dot(normal, planeToRay))/length(normal);
+  float dist = length(dot(normal, planeToRay)) / length(normal);
 
   MarchHit hit;
   hit.dist = dist;
-  hit.normal = normal;
+  hit.normal = normalize(normal);
   hit.color = color;
+  hit.pos = rayPosition;
 
   return hit;
 }
 
+MarchHit smallest(vec3 position, vec3 dir) {
+    MarchHit hits[] = {
+        sphere(vec3(1.0, 1.0, -3.0), position, 1.0, vec3(1.0)),
+        plane(vec3(0.0, 0.0, -10.0), position, vec3(1.0, 1.0, 0.0), vec3(0.0, 1.0, 0.0), vec3(1.0, 0.0, 1.0))
+    };
+
+    MarchHit bestHit = hits[0];
+    for (int i = 1; i < 2; ++i) {
+        MarchHit candidate = hits[i];
+
+        if (bestHit.dist > candidate.dist)
+            bestHit = candidate;
+    }
+
+    return bestHit;
+}
+
 MarchHit march(vec3 position, vec3 dir) {
-    MarchHit hit = sphere(vec3(1.0, 1.0, -3.0), position, 1.0, vec3(1.0));
+    MarchHit hit = smallest(position, dir);
 
     while (hit.dist > 0.001) {
         position = position + dir * hit.dist;
-        hit = sphere(vec3(1.0, 1.0, -3.0), position, 1.0, vec3(1.0));
+        hit = smallest(position, dir);
 
-        if (hit.dist > 6.0) {
+        if (hit.dist > 20.0) {
             MarchHit miss;
             miss.dist = 100000.0;
             miss.normal = vec3(0.0);
