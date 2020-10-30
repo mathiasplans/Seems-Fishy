@@ -37,7 +37,6 @@ struct WaveProperties{
     vec4 amplitudes;
 };
 
-MarchHit sphere(vec3 spherePosition, Ray ray, float radius, vec3 color, Material material) {
 MarchHit sphere(vec3 spherePosition, Ray ray, float radius, Material material) {
     float dist = distance(spherePosition, ray.pos) - radius;
     vec3 normal =  normalize(ray.pos - spherePosition);
@@ -112,7 +111,6 @@ Ray intersectWater(Ray ray, vec3 waterPosition, vec3 normal, WaveProperties wave
 
 
 
-Material createMaterial(vec3 color, vec3 diffuse, vec3 shininess) {
 Material createMaterial(vec3 color, vec3 diffuse, vec3 shininess, float reflectance) {
     Material newMaterial;
 
