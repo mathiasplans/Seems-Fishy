@@ -1,6 +1,8 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
+#define PI 3.1415926535897932384626433832795
+
 layout(location = 0) in vec3 fragColor;
 layout(location = 1) in vec2 pos;
 
@@ -18,15 +20,15 @@ struct Material {
     vec3 specular;
     vec3 shininess;
     vec3 color;
-    vec3 ambient;      
+    vec3 ambient;
 };
 
 //return type for hit function
 struct MarchHit {
   float dist;
   vec3 normal;
-  vec3 color;
   vec3 pos;
+  Material material;
 };
 
 MarchHit sphere(vec3 spherePosition, Ray ray, float radius, vec3 color, Material material) {
@@ -35,37 +37,52 @@ MarchHit sphere(vec3 spherePosition, Ray ray, float radius, vec3 color, Material
     MarchHit hit;
     hit.dist = dist;
     hit.normal = normal;
-    hit.color = mix(ray.color* material.color, material.color*material.ambient,0.2);
+    hit.material = material;
+    //hit.color = mix(ray.color * material.color, material.color * material.ambient, 0.1);
     hit.pos = ray.pos;
 
     return hit;
 }
 
-MarchHit plane(vec3 planePosition, Ray ray, vec3 normal, vec3 color){
+MarchHit plane(vec3 planePosition, Ray ray, vec3 normal, vec3 color, Material material){
   vec3 planeToRay = ray.pos - planePosition;;
   float dist = length(dot(normal, planeToRay));
 
   MarchHit hit;
   hit.dist = dist;
   hit.normal = normalize(normal);
-  hit.color = color;
+  hit.material = material;
+  //hit.material.color = color;
   hit.pos = ray.pos;
 
   return hit;
 }
 
-MarchHit water(vec3 waterPosition, Ray ray, float amplitude, vec3 normal, vec3 color){
+MarchHit water(vec3 waterPosition, Ray ray, float amplitude, vec3 normal, vec3 color, Material material){
     vec3 planePosition = waterPosition;
     if(ray.pos.y > waterPosition.y){
         planePosition.y += amplitude;
-        return plane(planePosition, ray, normal, color);
+        return plane(planePosition, ray, normal, color,material);
     }
     else{
          planePosition.y -= amplitude;
-        return plane(planePosition, ray, normal, color);
-    }  
+        return plane(planePosition, ray, normal, color,material);
+    }
 }
 
+Ray intersectWater(Ray ray, vec3 waterPosition, vec3 normal){
+    
+}
+
+float wave(Ray ray, vec3 waterPosition, float time, float amplitude, float wavelength, float speed){
+    vec3 crest_vector = waterPosition - ray.pos;
+    vec3 ray_pos = ray.pos;
+    ray_pos.z = 0;
+    float freq = 2 * PI / wavelength;
+    float phase = speed * freq;
+    float x = amplitude * sin(dot(crest_vector, ray_pos) +))
+     
+}
 
 
 MarchHit smallest(Ray ray) {
@@ -83,11 +100,24 @@ MarchHit smallest(Ray ray) {
     basic2.color = vec3(0,1,0);
     basic2.ambient = vec3(0.1,0.1,0.1);
 
+    Material wall;
+    wall.diffuse = vec3(0,0,0);
+    wall.specular = vec3(0,0,0);
+    wall.shininess = vec3(0,0,0);
+    wall.color = vec3(1,1,1);
+    wall.ambient = vec3(0.1,0.1,0.1);
 
     MarchHit hits[] = {
         sphere(vec3(1.0, 1.0, -3.0), ray, 1.0, vec3(1.0, 0.0, 1.0), basic),
         // plane(vec3(0.0, -10.0, -10.0), position, vec3(0.0, 1.0, 1.0), vec3(1.0, 0.0, 1.0))
-        sphere(vec3(3.0, 3.0, -4.0), ray, 1.0, vec3(1.0, 1.0, 0.0), basic2),
+        sphere(vec3(6.0, 4.0, -6.0), ray, 1.0, vec3(1.0, 1.0, 0.0),basic2),
+
+        plane(vec3(10.0, 0.0, 0.0), ray, vec3(-1.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0),wall),
+        plane(vec3(0.0, 10.0, 0.0), ray, vec3(0.0, -1.0, 0.0), vec3(1.0, 0.0, 0.0),wall),
+        plane(vec3(0.0, 0.0, 10.0), ray, vec3(0.0, 0.0, -1.0), vec3(1.0, 1.0, 1.0),wall),
+        plane(vec3(-10.0, 0.0, 0.0), ray, vec3(1.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0),wall),
+        plane(vec3(0.0, -10.0, 0.0), ray, vec3(0.0, 1.0, 0.0), vec3(1.0, 1.0, 1.0),wall),
+        plane(vec3(0.0, 0.0, -10.0), ray, vec3(0.0, 0.0, 1.0), vec3(1.0, 1.0, 1.0),wall)
     };
 
     MarchHit bestHit = hits[0];
@@ -113,7 +143,7 @@ MarchHit march(Ray ray) {
             MarchHit miss;
             miss.dist = 100000.0;
             miss.normal = vec3(0.0);
-            miss.color = vec3(0.0);
+            miss.material.color = vec3(0.0);
 
             return miss;
         }
@@ -126,8 +156,8 @@ MarchHit multi_march(Ray ray, int jumps) {
     MarchHit first = march(ray);
     MarchHit current = first;
 
-    vec3 colors[10];
-    colors[0] = first.color;
+    MarchHit hits[10];
+    hits[0] = current;
 
     int i;
     for (i = 1; i < 10; ++i) {
@@ -144,15 +174,19 @@ MarchHit multi_march(Ray ray, int jumps) {
         if (current.normal == vec3(0.0))
             break;
 
-        colors[i] = current.color;
+        hits[i] = current;
     }
 
     // Mixing color
-    for (int a = i; i > 0; --i) {
-        colors[a - 1] = mix(colors[a], colors[a - 1], 0.9);
+    //for (int i = 0; i  a; --i) {
+    for (int a = i; a > 0; --a){
+    
+        ray.color = ray.color * hits[a-1].material.color;
+        //hits[a - 1].color = mix(hits[a].color, hits[a - 1].color, 0.7);
     }
 
-    first.color = mix(colors[0], colors[1], 0.1);
+    first.material.color = ray.color;
+    //first.color = mix(hits[0].color, hits[1].color, 0.3);
 
     return first;
 }
@@ -172,7 +206,7 @@ void main() {
 
     vec3 lightDir = normalize(hit.pos - lightPos);
 
-    vec3 col = hit.color * (dot(-lightDir, hit.normal));
+    vec3 col = hit.material.color;// * (dot(-lightDir, hit.normal));
 
     outColor = vec4(col, 1.0);
 }
